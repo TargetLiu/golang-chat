@@ -2,8 +2,10 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -24,22 +26,11 @@ func main() {
 	fmt.Println("Hello World!")
 }
 
-//ScanLine 读取整行，不以空格为分隔符
+//ScanLine 读取整行
 func ScanLine() string {
-	var c byte
-	var err error
-	var b []byte
-	for err == nil {
-		_, err = fmt.Scanf("%c", &c)
-
-		if c != '\n' {
-			b = append(b, c)
-		} else {
-			break
-		}
-	}
-
-	return string(b)
+	inputReader := bufio.NewReader(os.Stdin)
+	input, _ := inputReader.ReadString('\n')
+	return strings.Replace(input, "\n", "", -1)
 }
 
 func checkErr(err error) {
