@@ -24,21 +24,21 @@ func startServer(port string) {
 	msg := make(chan string, 10)
 
 	//启动协程广播消息
-	go broadcast(&conns, msg)
+	go broadcast(conns, msg)
 
 	//启动协程处理服务端消息及命令
-	go servermsg(&conns, msg)
+	go servermsg(conns, msg)
 
 	for {
 		//接收客户端连接
 		conn, err := listen.Accept()
 		checkErr(err)
 		//每个连接放到单独协程进行处理
-		go handler(conn, msg, &conns)
+		go handler(conn, msg, conns)
 	}
 }
 
-func handler(conn net.Conn, msg chan string, conns *map[string]net.Conn) {
+func handler(conn net.Conn, msg chan string, conns map[string]net.Conn) {
 	//初次连接发送欢迎消息
 	conn.Write([]byte("Welcome to join."))
 	var messages string
@@ -62,10 +62,10 @@ func handler(conn net.Conn, msg chan string, conns *map[string]net.Conn) {
 		switch cmd[0] {
 		case "hello":
 			//判断是否有同名昵称并保存客户端连接
-			if _, ok := (*conns)[cmd[1]]; ok {
+			if _, ok := conns[cmd[1]]; ok {
 				conn.Close()
 			} else {
-				(*conns)[cmd[1]] = conn
+				conns[cmd[1]] = conn
 				messages = "[" + cmd[1] + "] join."
 			}
 		case "say":
@@ -78,22 +78,22 @@ func handler(conn net.Conn, msg chan string, conns *map[string]net.Conn) {
 
 }
 
-func broadcast(conns *map[string]net.Conn, msg chan string) {
+func broadcast(conns map[string]net.Conn, msg chan string) {
 	for {
 		//从通道中接收消息
 		data := <-msg
 
 		//循环客户端连接并发送消息
-		for key, value := range *conns {
+		for key, value := range conns {
 			_, err := value.Write([]byte(data))
 			if err != nil {
-				delete(*conns, key)
+				delete(conns, key)
 			}
 		}
 	}
 }
 
-func servermsg(conns *map[string]net.Conn, msg chan string) {
+func servermsg(conns map[string]net.Conn, msg chan string) {
 	for {
 		message := ScanLine()
 
@@ -103,9 +103,9 @@ func servermsg(conns *map[string]net.Conn, msg chan string) {
 		if len(cmd) > 1 {
 			switch cmd[0] {
 			case "kick":
-				if _, ok := (*conns)[cmd[1]]; ok {
+				if _, ok := (conns)[cmd[1]]; ok {
 					//关闭对应客户端连接
-					(*conns)[cmd[1]].Close()
+					(conns)[cmd[1]].Close()
 					msg <- "[Server]: Kick [" + cmd[1] + "]"
 				}
 			default:

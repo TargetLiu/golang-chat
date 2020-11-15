@@ -13,7 +13,7 @@
 - 克隆代码
 
 ```
-git clone https://github.com/TargetLiu/chat
+git clone https://github.com/TargetLiu/golang-chat
 ```
 
 - 编译安装
@@ -27,9 +27,9 @@ go install
 
 ```
 //服务端
-chat server [:端口号]
+golang-chat server [:端口号]
 //客户端
-chat client [服务端IP地址:端口号] 
+golang-chat client [服务端IP地址:端口号] 
 ```
 
 - 服务端命令
