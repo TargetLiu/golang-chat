@@ -1,5 +1,9 @@
 # Golang简单聊天室示例
 
+## 更新
+
+2020-11-17 稍微更新了一下目录结构和启动参数，加入了一个简单的聊天协议
+
 ## 介绍
 
 一个简单的基于GO语言的聊天室示例，参考了网上许多类似代码。代码有简单注释。
@@ -19,17 +23,27 @@ git clone https://github.com/TargetLiu/golang-chat
 - 编译安装
 
 ```
-go build
-go install
+make build
+```
+
+or 
+
+```
+make install
 ```
 
 - 运行
 
 ```
-//服务端
-golang-chat server [:端口号]
-//客户端
-golang-chat client [服务端IP地址:端口号] 
+golang-chat --help
+
+Usage of golang-chat:
+  -host string
+        host (default "127.0.0.1")
+  -port int
+        port (default 6666)
+  -type string
+        start type [server|client] (default "server")
 ```
 
 - 服务端命令
