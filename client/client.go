@@ -32,10 +32,10 @@ func Start(addr string) {
 	// 开启协程处理消息
 	go handle(conn, nickname)
 
+	message := protocol.NewMessage()
 	// 发送消息
 	for {
 		content := scanline.Read()
-		message := protocol.NewMessage()
 		message.From = nickname
 		message.Content = content
 		message.Type = protocol.SAY
@@ -43,13 +43,15 @@ func Start(addr string) {
 		if err != nil {
 			logrus.Fatalf("write message err: %s", err)
 		}
+		message.Reset()
 	}
 }
 
 func handle(conn net.Conn, nickname string) {
+	logrus.Infof("fetch message...")
+	reader := bufio.NewReader(conn)
+	message := protocol.NewMessage()
 	for {
-		reader := bufio.NewReader(conn)
-		message := protocol.NewMessage()
 		err := message.Read(reader)
 		if err != nil {
 			if err == io.EOF {
@@ -60,5 +62,6 @@ func handle(conn net.Conn, nickname string) {
 		if message.From != nickname {
 			logrus.Infof("[%s]: %s\n", message.From, message.Content)
 		}
+		message.Reset()
 	}
 }

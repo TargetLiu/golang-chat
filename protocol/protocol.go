@@ -121,7 +121,14 @@ func (m *Message) Write(w io.Writer) error {
 	m.Raw.Write([]byte(fmt.Sprintf("%08d", len(m.Content))))
 	m.Raw.Write([]byte(m.Content))
 	m.Raw.Write([]byte(MessageTailMust))
-
 	_, err := w.Write(m.Raw.Bytes())
+	m.Raw.Reset()
 	return err
+}
+
+func (m *Message) Reset() {
+	m.Content = ""
+	m.From = ""
+	m.Type = 0
+	m.Raw.Reset()
 }

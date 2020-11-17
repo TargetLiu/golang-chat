@@ -24,7 +24,6 @@ func init() {
 }
 
 func Start(addr string) {
-
 	listen, err := net.Listen("tcp", addr)
 	if err != nil {
 		logrus.Fatalf("listen err: %s", err)
@@ -60,16 +59,18 @@ func handler(conn net.Conn) {
 		conn.Close()
 	}()
 
+	writeMsg := protocol.NewMessage()
 	//初次连接发送欢迎消息
-	welcomeMsg := protocol.NewMessage()
-	welcomeMsg.From = "server"
-	welcomeMsg.Content = "Welcome to join."
-	welcomeMsg.Type = protocol.SAY
-	welcomeMsg.Write(conn)
+	writeMsg.From = "server"
+	writeMsg.Content = "Welcome to join."
+	writeMsg.Type = protocol.SAY
+	writeMsg.Write(conn)
+	writeMsg.Reset()
 
+	//读取客户端消息
+	reader := bufio.NewReader(conn)
+	message := protocol.NewMessage()
 	for {
-		reader := bufio.NewReader(conn)
-		message := protocol.NewMessage()
 		err := message.Read(reader)
 		if err != nil {
 			if opErr, ok := err.(*net.OpError); (ok && opErr.Err.Error() == "use of closed network connection") || err == io.EOF {
@@ -79,26 +80,20 @@ func handler(conn net.Conn) {
 			return
 		}
 		logrus.Infof("[%s]: %s\n", message.From, message.Content)
-
-		writeMsg := protocol.NewMessage()
-
+		writeMsg.Type = protocol.SAY
 		switch message.Type {
 		case protocol.HANDSHAKE:
 			//判断是否有同名昵称并保存客户端连接
 			nickname = message.From
-			if nickname == "server" {
+			if _, ok := conns.LoadOrStore(nickname, conn); ok || nickname == "server" {
 				return
 			}
-			if _, ok := conns.LoadOrStore(nickname, conn); ok {
-				return
-			} else {
-				writeMsg.From = "server"
-				writeMsg.Content = fmt.Sprintf("[%s] join.", message.From)
-			}
+			writeMsg.From = "server"
+			writeMsg.Content = fmt.Sprintf("[%s] join.", message.From)
 		case protocol.SAY:
-			writeMsg = message
+			writeMsg.From = message.From
+			writeMsg.Content = message.Content
 		}
-
 		//向通道发送消息
 		chMsg <- writeMsg
 	}
@@ -109,7 +104,6 @@ func broadcast() {
 	for {
 		//从通道中接收消息
 		msg := <-chMsg
-
 		//循环客户端连接并发送消息
 		conns.Range(func(key interface{}, value interface{}) bool {
 			conn := value.(net.Conn)
@@ -119,19 +113,18 @@ func broadcast() {
 			}
 			return true
 		})
+		msg.Reset()
 	}
 }
 
 func servermsg() {
+	serverMsg := protocol.NewMessage()
 	for {
-		command := scanline.Read()
-
-		//解析命令
-		cmd := strings.Split(string(command), "|")
-
-		serverMsg := protocol.NewMessage()
 		serverMsg.From = "server"
-
+		serverMsg.Type = protocol.SAY
+		//解析命令
+		command := scanline.Read()
+		cmd := strings.Split(string(command), "|")
 		if len(cmd) > 1 {
 			switch cmd[0] {
 			case "kick":
